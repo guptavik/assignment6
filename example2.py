@@ -10,6 +10,10 @@ from pywinauto.application import Application
 import win32gui
 import win32con
 import time
+from models import AddInput, AddOutput, SqrtInput, SqrtOutput, StringsToIntsInput, StringsToIntsOutput, ExpSumInput, ExpSumOutput
+from rich.console import Console
+from rich.panel import Panel
+
 from win32api import GetSystemMetrics
 import os
 from email.mime.text import MIMEText
@@ -22,6 +26,9 @@ import pickle
 from dotenv import load_dotenv
 import base64
 from email.mime.application import MIMEApplication
+
+# Create console for rich output
+console = Console()
 
 # instantiate an MCP server client
 mcp = FastMCP("Calculator")
@@ -69,7 +76,7 @@ def create_message(sender, to, subject, message_text):
     return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')}
 
 @mcp.tool()
-def send_email(emailto: str, subject: str, body: str) -> str:
+def send_email(emailto: str, subject: str, body: str) -> TextContent:
     """
     Send email to a specific email address.
     
@@ -79,7 +86,7 @@ def send_email(emailto: str, subject: str, body: str) -> str:
         body (str): The body of the email
     
     Returns:
-        str: Status of the email sending operation
+        TextContent: Status of the email sending operation
     """
 
     try:
@@ -89,10 +96,6 @@ def send_email(emailto: str, subject: str, body: str) -> str:
         if not sender_email:
             raise ValueError("Missing email address. Please check your .env file.")
         
-        # Format the phone number (remove any non-digits)
-        #phone_number = ''.join(filter(str.isdigit, phone_number))
-        
-    
         # Get Gmail service
         service = get_gmail_service()
         
@@ -110,22 +113,33 @@ def send_email(emailto: str, subject: str, body: str) -> str:
             body=message
         ).execute()
         
-        #print(f"Message sent successfully to {phone_number}@tmomail.net")
-        return f"Email sent successfully to {emailto}"
+        return TextContent(
+            type="text",
+            text=f"Email sent successfully to {emailto}"
+        )
         
     except Exception as e:
         print(f"Error sending email: {str(e)}")
-        return f"Error sending email: {str(e)}"
+        return TextContent(
+            type="text",
+            text=f"Error sending email: {str(e)}"
+        )
 
 
 
 
 #addition tool
 @mcp.tool()
-def add(a: int, b: int) -> int:
+def add(input: AddInput) -> AddOutput:
     """Add two numbers"""
-    print("CALLED: add(a: int, b: int) -> int:")
-    return int(a + b)
+    print("CALLED: add(AddInput) -> AddOutput")
+    return AddOutput(result=input.a + input.b)
+
+@mcp.tool()
+def sqrt(input: SqrtInput) -> SqrtOutput:
+    """Square root of a number"""
+    print("CALLED: sqrt(SqrtInput) -> SqrtOutput")
+    return SqrtOutput(result=input.a ** 0.5)
 
 @mcp.tool()
 def add_list(l: list) -> int:
@@ -160,13 +174,6 @@ def power(a: int, b: int) -> int:
     """Power of two numbers"""
     print("CALLED: power(a: int, b: int) -> int:")
     return int(a ** b)
-
-# square root tool
-@mcp.tool()
-def sqrt(a: int) -> float:
-    """Square root of a number"""
-    print("CALLED: sqrt(a: int) -> float:")
-    return float(a ** 0.5)
 
 # cube root tool
 @mcp.tool()
@@ -233,16 +240,22 @@ def create_thumbnail(image_path: str) -> Image:
     return Image(data=img.tobytes(), format="png")
 
 @mcp.tool()
-def strings_to_chars_to_int(string: str) -> list[int]:
-    """Return the ASCII values of the characters in a word"""
-    print("CALLED: strings_to_chars_to_int(string: str) -> list[int]:")
-    return [int(ord(char)) for char in string]
+def strings_to_chars_to_int(input: StringsToIntsInput) -> StringsToIntsOutput:
+    """Convert a string to a list of ASCII values"""
+    print("CALLED: strings_to_chars_to_int(StringsToIntsInput) -> StringsToIntsOutput")
+    # Convert each character in the string to its ASCII value
+    ascii_values = [ord(char) for char in input.string]
+    print(f"ASCII values: {ascii_values}")
+    return StringsToIntsOutput(ints=ascii_values)
 
 @mcp.tool()
-def int_list_to_exponential_sum(int_list: list) -> float:
-    """Return sum of exponentials of numbers in a list"""
-    print("CALLED: int_list_to_exponential_sum(int_list: list) -> float:")
-    return sum(math.exp(i) for i in int_list)
+def int_list_to_exponential_sum(input: ExpSumInput) -> ExpSumOutput:
+    """Calculate the sum of e raised to each integer in the list"""
+    print("CALLED: int_list_to_exponential_sum(ExpSumInput) -> ExpSumOutput")
+    # Calculate e^value for each value in the list and sum them
+    exp_sum = sum(math.exp(value) for value in input.int_list)
+    print(f"Exponential sum: {exp_sum}")
+    return ExpSumOutput(result=exp_sum)
 
 @mcp.tool()
 def fibonacci_numbers(n: int) -> list:
@@ -254,13 +267,6 @@ def fibonacci_numbers(n: int) -> list:
     for _ in range(2, n):
         fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
     return fib_sequence[:n]
-
-
-@mcp.tool()
-def send_email(emailto: str, subject: str, body: str) -> dict:
-    """Send an email"""
-    print(f"Sending email to {emailto} with subject {subject} and body {body}")
-    return "Email sent successfully"
 
 
 @mcp.tool()
@@ -555,7 +561,7 @@ def verify(expression: str, expected: float) -> TextContent:
 
 if __name__ == "__main__":
     # Check if running with mcp dev command
-    print("STARTING")
+    print("STARTING THE SERVER AT AMAZING LOCATION")
     if len(sys.argv) > 1 and sys.argv[1] == "dev":
         mcp.run()  # Run without transport for dev server
     else:
