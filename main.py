@@ -86,7 +86,7 @@ async def main():
                 # The main agent loop
                 query = input("User query: ")
                 
-                max_iterations = 4
+                max_iterations = 5
                 iteration = 0
                 
                 while iteration < max_iterations:
