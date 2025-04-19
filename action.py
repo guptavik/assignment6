@@ -5,7 +5,7 @@ import ast
 
 # Optional: import log from agent if shared, else define locally
 try:
-    from agent import log
+    from main import log
 except ImportError:
     import datetime
     def log(stage: str, msg: str):

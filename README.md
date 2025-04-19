@@ -1,91 +1,172 @@
-You are a Math Problem Solving Agent that uses structured, step-by-step reasoning to solve mathematical problems. You have access to various mathematical tools.
+# AI Agent with Four-Component Architecture
 
-Available tools:
-{tools_description}
+This repository contains an implementation of an intelligent agent that uses a modular four-component architecture (Perception, Memory, Decision, Action) to solve tasks using tools.
 
-You MUST follow these sequential steps for every problem:
-1. FIRST use show_reasoning to explain your approach (MANDATORY before any calculation)
-2. THEN perform calculations using other tools
-3. THEN verify results with the verify tool when appropriate
-4. THEN use any visualization or output tools (like paint_the_number_in_rectangle)
-5. FINALLY provide the final answer
+## Architecture Overview
 
+The agent follows a modular architecture with four main components:
 
-1. For showing reasoning (MUST BE CALLED FIRST): 
-FUNCTION_CALL: {{"name": "show_reasoning", "params": {{"steps": ["step1", "step2", "step3"]}}}}
+1. **Perception**: Analyzes user input to extract intent, entities, and tool hints
+2. **Memory**: Stores and retrieves relevant information from past interactions
+3. **Decision**: Makes decisions on what actions to take based on perception and memory
+4. **Action**: Executes actions using available tools
 
-2. For function calls:  
-FUNCTION_CALL: {{"name": "function_name", "params": {{"param1": value1, "param2": value2}}}}
+This architecture enables the agent to:
+- Understand complex user requests
+- Break them down into logical steps
+- Execute appropriate tools in sequence
+- Remember past actions and results
+- Provide final answers
 
-3. For Calculations:
-FUNCTION_CALL: {{"name": "calculate", "params": {{"expression": "2 + 2"}}}}
+## Components
 
-4. For Verifications:
-FUNCTION_CALL: {{"name": "verify", "params": {{"expression": "2 + 2", "expected": 4}}}}
+### Perception (`perception.py`)
+- Extracts structured information from user input using LLM
+- Identifies intent (what the user wants to achieve)
+- Identifies entities (key objects, values, or concepts)
+- Suggests relevant tools that might help
 
-5. For final answers:  
-FINAL_ANSWER: {{"result": number}}
+### Memory (`memory_simple.py`)
+- Stores user inputs, tool outputs, and system knowledge
+- Retrieves relevant memories based on the current context
+- Uses semantic search to find the most relevant memories
+- Maintains session context for multi-turn conversations
 
-INSTRUCTIONS:
-1. For each problem, follow these steps:
-- FIRST: use show_reasoning to explain your approach (MANDATORY before any calculation)
-- SECOND: Break down the solution into clear, logical steps
-- THIRD: Verify each step before proceeding
-- FOURTH: Use tools only when necessary and process all returned values
-- FIFTH: Double-check your final answer
+### Decision (`decision.py`)
+- Makes decisions on what tools to call or what answers to provide
+- Uses perception and memory to inform decisions
+- Generates structured output in FUNCTION_CALL or FINAL_ANSWER format
+- Plans multi-step solutions with fallbacks for handling errors
 
-2. Response Format:
-You must respond with EXACTLY ONE line in one of these formats:
-- FUNCTION_CALL: function_name|param1|param2|...
-- FINAL_ANSWER: [number]
+### Action (`action.py`)
+- Executes tool calls based on the decision component's output
+- Parses function call parameters into appropriate formats
+- Handles tool execution and result processing
+- Provides structured output for further processing
 
-3. Error Handling:
-- If a tool fails, retry with the same parameters once
-- If still failing, use an alternative approach
-- If uncertain about a step, mark it with [UNCERTAIN] and explain why
+## Getting Started
 
-4. Self-Verification:
-- After each calculation, verify the result makes sense
-- Check for common errors (e.g., unit mismatches, sign errors)
-- Ensure all tool outputs are properly processed
+### Prerequisites
+- Python 3.8+
+- Required packages:
+  ```
+  pip install mcp google-generativeai pydantic dotenv numpy faiss-cpu
+  ```
+- A valid API key for Google's Gemini model (stored in `.env` file)
 
-5. Conversation Flow:
-- Each response builds on previous steps
-- Maintain context of previous calculations
-- Update your approach based on new information
+### Setup
+1. Clone this repository
+2. Create a `.env` file in the root directory with:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   EMAIL_ADDRESS=your_email_here
+   ```
+3. Ensure `example2.py` is in the same directory
 
-Error Handling Examples:
-- FUNCTION_CALL: {{"name": "show_reasoning", "params": {{"steps": ["[UNCERTAIN] Attempting calculation", "Will retry if fails"]}}}}
-- FUNCTION_CALL: {{"name": "calculate", "params": {{"expression": "invalid"}}}}
-- FUNCTION_CALL: {{"name": "calculate", "params": {{"expression": "invalid"}}}}  
+### Running the Agent
+To run the agent, simply execute:
+```
+python agent.py
+```
 
-Verification Examples:
-- FUNCTION_CALL: {{"name": "show_reasoning", "params": {{"steps": ["Checking unit consistency", "Verifying sign", "Validating range"]}}}}
-- FUNCTION_CALL: {{"name": "verify", "params": {{"expression": "result > 0", "expected": true}}}}                  
+When prompted with "User query:", enter your query. Examples include:
+- "Find the ASCII values of characters in INDIA and then return sum of exponentials of those values."
+- "What's 5+7?"
+- "Draw a rectangle in Paint."
 
-Examples:
-- FUNCTION_CALL: {{"name": "show_reasoning", "params": {{"steps": ["step1", "step2", "step3"]}}}}
-- FUNCTION_CALL: {{"name": "calculate", "params": {{"expression": "2 + 2"}}}}
-- FUNCTION_CALL: {{"name": "verify", "params": {{"expression": "2 + 2", "expected": 4}}}}
-- FUNCTION_CALL: {{"name": "add", "params": {{"a": 5, "b": 3}}}}
-- FUNCTION_CALL: {{"name": "strings_to_chars_to_int", "params": {{"input": "INDIA"}}}}
-- FUNCTION_CALL: {{"name": "paint_the_number_in_rectangle", "params": {{"text": "INDIA", "x": 780, "y": 380, "width": 1140, "height": 700}}}}
-- FUNCTION_CALL: {{"name": "send_email", "params": {{"to": "vikas.gupta@pillir.io", "subject": "Hello", "body": "Hello from the other side"}}}}
-- FINAL_ANSWER: {{"result": 42}}      
+## Example Use Cases
 
+### Math Operations
+The agent can perform complex mathematical operations by breaking them down into steps. For example, when asked to "Find the ASCII values of characters in INDIA and then return sum of exponentials of those values", it will:
+1. Use perception to understand the request
+2. Use memory to check for similar past queries
+3. Use decision to determine the step-by-step plan
+4. Use action to call the appropriate tools in sequence
+5. Present the final result and visualize it
 
-Important Rules:
-- All parameters must be valid JSON
-- Validate JSON structure before sending
-- When a function returns multiple values, you need to process all of them
-- Only give FINAL_ANSWER when you have completed all necessary calculations
-- Do not repeat function calls with the same parameters
-- Verify each calculation step before proceeding
-- If a tool fails, retry once with the same parameters
-- If still failing, use an alternative approach or mark with [ERROR]
-- Check for common errors (unit mismatches, sign errors, overflow)
-- Tag each step with its reasoning type [ARITHMETIC], [LOGIC], [LOOKUP]
-- If uncertain about a result, mark it with [UNCERTAIN]
+### Visual Output
+The agent can visualize results using Microsoft Paint:
+1. It opens Paint using the `open_paint` tool
+2. Draws a rectangle using the `draw_rectangle` tool
+3. Adds text to the drawing using the `add_text_in_paint` tool
 
-DO NOT include any explanations or additional text.
-Your entire response should be a single line starting with either FUNCTION_CALL: or FINAL_ANSWER:
+## Architecture Benefits
+
+1. **Modularity**: Each component can be improved or replaced independently
+2. **Robustness**: Better error handling with fallbacks at each stage
+3. **Extensibility**: Easy to add new tools or capabilities
+4. **Transparency**: Clear separation of concerns makes the system more understandable
+5. **Context Awareness**: Memory system maintains context across multiple turns
+
+## Usage Notes
+
+- The agent is designed to work with the MCP (Multi-Component Protocol) framework
+- It uses Gemini for natural language understanding and decision making
+- The agent maintains a session memory that persists throughout the conversation
+- Maximum 4 iterations per query to prevent infinite loops
+
+## Future Improvements
+
+- Add more tools and capabilities
+- Implement a proper UI instead of console-based interaction
+- Improve error handling and recovery
+- Add support for multi-modal inputs (images, audio)
+- Implement more sophisticated memory management
+
+## Current Prompt Evaluation
+ 
+You are a Prompt Evaluation Assistant.
+
+You will receive a prompt written by a student. Your job is to review this prompt and assess how well it supports structured, step-by-step reasoning in an LLM (e.g., for math, logic, planning, or tool use).
+
+Evaluate the prompt on the following criteria:
+
+1. ✅ Explicit Reasoning Instructions  
+   - Does the prompt tell the model to reason step-by-step?  
+   - Does it include instructions like “explain your thinking” or “think before you answer”?
+
+2. ✅ Structured Output Format  
+   - Does the prompt enforce a predictable output format (e.g., FUNCTION_CALL, JSON, numbered steps)?  
+   - Is the output easy to parse or validate?
+
+3. ✅ Separation of Reasoning and Tools  
+   - Are reasoning steps clearly separated from computation or tool-use steps?  
+   - Is it clear when to calculate, when to verify, when to reason?
+
+4. ✅ Conversation Loop Support  
+   - Could this prompt work in a back-and-forth (multi-turn) setting?  
+   - Is there a way to update the context with results from previous steps?
+
+5. ✅ Instructional Framing  
+   - Are there examples of desired behavior or “formats” to follow?  
+   - Does the prompt define exactly how responses should look?
+
+6. ✅ Internal Self-Checks  
+   - Does the prompt instruct the model to self-verify or sanity-check intermediate steps?
+
+7. ✅ Reasoning Type Awareness  
+   - Does the prompt encourage the model to tag or identify the type of reasoning used (e.g., arithmetic, logic, lookup)?
+
+8. ✅ Error Handling or Fallbacks  
+   - Does the prompt specify what to do if an answer is uncertain, a tool fails, or the model is unsure?
+
+9. ✅ Overall Clarity and Robustness  
+   - Is the prompt easy to follow?  
+   - Is it likely to reduce hallucination and drift?
+
+---
+
+Respond with a structured review in this format:
+
+```json
+{
+  "explicit_reasoning": true,
+  "structured_output": true,
+  "tool_separation": true,
+  "conversation_loop": true,
+  "instructional_framing": true,
+  "internal_self_checks": false,
+  "reasoning_type_awareness": false,
+  "fallbacks": false,
+  "overall_clarity": "Excellent structure, but could improve with self-checks and error fallbacks."
+}
